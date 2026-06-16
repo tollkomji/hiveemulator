@@ -9,6 +9,8 @@ Logs
 build
 deployment/lab3/config/config.runtime.json
 deployment/lab4/config/config.runtime.json
+deployment/lab5/.env.runtime
+deployment/lab5/config/config.runtime.json
 src/CommunicationControl/DevOpsProject.sln.DotSettings.user
 src/CommunicationControl/DevOpsProject.sln.DotSettings.user
 src/CommunicationControl/DevOpsProject.sln.DotSettings.user

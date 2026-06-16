@@ -1,0 +1,72 @@
+name: hiveemulator-lab5
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: lab5-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - lab5-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  communication-control:
+    image: ${REGISTRY}/${IMAGE_REPOSITORY}/communication-control:${IMAGE_TAG}
+    container_name: lab5-communication-control
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      Redis__ConnectionString: redis:6379
+      Urls: http://0.0.0.0:8080
+      BasePath: ""
+    ports:
+      - "8080:8080"
+    networks:
+      - lab5-net
+
+  hive-mind:
+    image: ${REGISTRY}/${IMAGE_REPOSITORY}/hive-mind:${IMAGE_TAG}
+    container_name: lab5-hive-mind
+    restart: unless-stopped
+    depends_on:
+      - communication-control
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      Urls: http://0.0.0.0:5149
+      CommunicationConfiguration__RequestSchema: http
+      CommunicationConfiguration__CommunicationControlIP: communication-control
+      CommunicationConfiguration__CommunicationControlPort: 8080
+      CommunicationConfiguration__CommunicationControlPath: api/v1/hive
+      CommunicationConfiguration__HiveIP: hive-mind
+      CommunicationConfiguration__HivePort: 5149
+      CommunicationConfiguration__HiveID: "1"
+    ports:
+      - "5149:5149"
+    networks:
+      - lab5-net
+
+  map-client:
+    image: ${REGISTRY}/${IMAGE_REPOSITORY}/map-client:${IMAGE_TAG}
+    container_name: lab5-map-client
+    restart: unless-stopped
+    depends_on:
+      - communication-control
+    ports:
+      - "3000:80"
+    volumes:
+      - ./config/config.runtime.json:/usr/share/nginx/html/config.json:ro
+    networks:
+      - lab5-net
+
+networks:
+  lab5-net:
+    name: hiveemulator-lab5
+    driver: bridge
