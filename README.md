@@ -21,6 +21,7 @@ This is a demo project used in the Uni DevOps course
 
 - Lab 1 manual IaaS deployment package: [deployment/lab1](deployment/lab1)
 - Lab 3 Docker deployment package: [deployment/lab3](deployment/lab3)
+- Lab 4 Docker Compose deployment package: [deployment/lab4](deployment/lab4)
 
 ## Installation
 
