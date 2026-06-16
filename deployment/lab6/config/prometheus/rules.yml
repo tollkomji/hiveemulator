@@ -1,0 +1,31 @@
+groups:
+  - name: hiveemulator-availability
+    rules:
+      - alert: HiveEmulatorEndpointDown
+        expr: probe_success{job="hiveemulator-blackbox"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Hive Emulator endpoint is unavailable"
+          description: "{{ $labels.instance }} has failed the HTTP probe for more than one minute."
+
+      - alert: HiveEmulatorHighContainerCpu
+        expr: sum by (name) (rate(container_cpu_usage_seconds_total{name=~".*lab5.*"}[5m])) > 0.8
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage in a Hive Emulator container"
+          description: "{{ $labels.name }} is using high CPU for more than two minutes."
+
+  - name: vps-health
+    rules:
+      - alert: VpsLowDiskSpace
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on VPS"
+          description: "{{ $labels.mountpoint }} has less than 10% free space."
