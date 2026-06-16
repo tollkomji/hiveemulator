@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOTNET_VERSION: "8.0.x"
+  NODE_VERSION: "20"
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    name: Build and validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore .NET dependencies
+        run: dotnet restore src/CommunicationControl/DevOpsProject.sln
+
+      - name: Build .NET solution
+        run: dotnet build src/CommunicationControl/DevOpsProject.sln --configuration Release --no-restore
+
+      - name: Publish Communication Control API
+        run: >
+          dotnet publish src/CommunicationControl/DevOpsProject/DevOpsProject.CommunicationControl.API.csproj
+          --configuration Release
+          --no-build
+          --output src/CommunicationControl/published
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/MapClient/package-lock.json
+
+      - name: Install map client dependencies
+        run: npm ci
+        working-directory: src/MapClient
+
+      - name: Lint map client
+        run: npm run lint
+        working-directory: src/MapClient
+
+      - name: Build map client
+        run: npm run build
+        working-directory: src/MapClient
+
+      - name: Upload Communication Control artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: communication-control-published
+          path: src/CommunicationControl/published
+
+      - name: Upload map client artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-client-dist
+          path: src/MapClient/dist
+
+  docker:
+    name: Build and push Docker images
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Communication Control artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: communication-control-published
+          path: src/CommunicationControl/published
+
+      - name: Download map client artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: map-client-dist
+          path: src/MapClient/dist
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Communication Control metadata
+        id: com-control-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/communication-control
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Communication Control image
+        uses: docker/build-push-action@v6
+        with:
+          context: src/CommunicationControl
+          file: src/CommunicationControl/DevOpsProject/Dockerfile
+          push: true
+          tags: ${{ steps.com-control-meta.outputs.tags }}
+          labels: ${{ steps.com-control-meta.outputs.labels }}
+
+      - name: Extract map client metadata
+        id: map-client-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/map-client
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push map client image
+        uses: docker/build-push-action@v6
+        with:
+          context: src/MapClient
+          file: src/MapClient/Dockerfile
+          push: true
+          tags: ${{ steps.map-client-meta.outputs.tags }}
+          labels: ${{ steps.map-client-meta.outputs.labels }}
