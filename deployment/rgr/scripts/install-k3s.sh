@@ -6,6 +6,8 @@ if command -v k3s >/dev/null 2>&1; then
   exit 0
 fi
 
+sudo mkdir -p /usr/local/bin
+
 curl -sfL https://get.k3s.io | sh -s - server \
   --disable traefik \
   --write-kubeconfig-mode 644
