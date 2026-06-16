@@ -15,6 +15,13 @@ spec:
       labels:
         app: hive-mind
     spec:
+      initContainers:
+        - name: wait-for-communication-control
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until wget -q -O- http://communication-control:8080/control/api/v1/client/area; do echo "waiting for communication-control"; sleep 2; done
       containers:
         - name: hive-mind
           image: ghcr.io/tollkomji/hiveemulator/hive-mind:latest
