@@ -20,6 +20,7 @@ This is a demo project used in the Uni DevOps course
 ## DevOps lab deployment
 
 - Lab 1 manual IaaS deployment package: [deployment/lab1](deployment/lab1)
+- Lab 3 Docker deployment package: [deployment/lab3](deployment/lab3)
 
 ## Installation
 

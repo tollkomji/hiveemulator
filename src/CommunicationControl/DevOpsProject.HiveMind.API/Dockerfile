@@ -2,14 +2,14 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY DevOpsProject.sln ./
-COPY DevOpsProject/DevOpsProject.CommunicationControl.API.csproj DevOpsProject/
-COPY DevOpsProject.CommunicationControl.Logic/DevOpsProject.CommunicationControl.Logic.csproj DevOpsProject.CommunicationControl.Logic/
+COPY DevOpsProject.HiveMind.API/DevOpsProject.HiveMind.API.csproj DevOpsProject.HiveMind.API/
+COPY DevOpsProject.HiveMind.Logic/DevOpsProject.HiveMind.Logic.csproj DevOpsProject.HiveMind.Logic/
 COPY DevOpsProject.Shared/DevOpsProject.Shared.csproj DevOpsProject.Shared/
 
-RUN dotnet restore DevOpsProject/DevOpsProject.CommunicationControl.API.csproj
+RUN dotnet restore DevOpsProject.HiveMind.API/DevOpsProject.HiveMind.API.csproj
 
 COPY . .
-RUN dotnet publish DevOpsProject/DevOpsProject.CommunicationControl.API.csproj \
+RUN dotnet publish DevOpsProject.HiveMind.API/DevOpsProject.HiveMind.API.csproj \
     --configuration Release \
     --output /app/publish \
     /p:UseAppHost=false
@@ -24,6 +24,6 @@ COPY --from=build --chown=appuser:appuser /app/publish ./
 
 USER appuser
 
-EXPOSE 8080
+EXPOSE 5149
 
-ENTRYPOINT ["dotnet", "DevOpsProject.CommunicationControl.API.dll"]
+ENTRYPOINT ["dotnet", "DevOpsProject.HiveMind.API.dll"]
