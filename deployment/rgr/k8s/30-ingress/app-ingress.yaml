@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hiveemulator
+  namespace: hiveemulator-rgr
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /control
+            pathType: Prefix
+            backend:
+              service:
+                name: communication-control
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: map-client
+                port:
+                  number: 80

@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hive-mind
+  namespace: hiveemulator-rgr
+  labels:
+    app: hive-mind
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hive-mind
+  template:
+    metadata:
+      labels:
+        app: hive-mind
+    spec:
+      containers:
+        - name: hive-mind
+          image: ghcr.io/tollkomji/hiveemulator/hive-mind:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5149
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Docker
+            - name: Urls
+              value: http://0.0.0.0:5149
+            - name: CommunicationConfiguration__RequestSchema
+              value: http
+            - name: CommunicationConfiguration__CommunicationControlIP
+              value: communication-control
+            - name: CommunicationConfiguration__CommunicationControlPort
+              value: "8080"
+            - name: CommunicationConfiguration__CommunicationControlPath
+              value: control/api/v1/hive
+            - name: CommunicationConfiguration__HiveIP
+              value: hive-mind
+            - name: CommunicationConfiguration__HivePort
+              value: "5149"
+            - name: CommunicationConfiguration__HiveID
+              value: "1"
+          readinessProbe:
+            httpGet:
+              path: /api/v1/ping
+              port: 5149
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/ping
+              port: 5149
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hive-mind
+  namespace: hiveemulator-rgr
+  labels:
+    app: hive-mind
+spec:
+  type: NodePort
+  selector:
+    app: hive-mind
+  ports:
+    - name: http
+      port: 5149
+      targetPort: 5149
+      nodePort: 32149

@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: communication-control
+  namespace: hiveemulator-rgr
+  labels:
+    app: communication-control
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: communication-control
+  template:
+    metadata:
+      labels:
+        app: communication-control
+    spec:
+      containers:
+        - name: communication-control
+          image: ghcr.io/tollkomji/hiveemulator/communication-control:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Docker
+            - name: Redis__ConnectionString
+              value: redis:6379
+            - name: Urls
+              value: http://0.0.0.0:8080
+            - name: BasePath
+              value: /control
+          readinessProbe:
+            httpGet:
+              path: /control/api/v1/client/area
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /control/swagger
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: communication-control
+  namespace: hiveemulator-rgr
+  labels:
+    app: communication-control
+spec:
+  selector:
+    app: communication-control
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
